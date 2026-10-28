@@ -5,6 +5,8 @@
   const DOW_LONG = ["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"];
   const AP_MONTHS = ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
   const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+    "October", "November", "December"];
   const ARREST = "Arrest or citation";
   const NOT_CHECKED = "Not yet checked";
   const PAGE_SIZE = 50;
@@ -250,8 +252,11 @@
 
   // ---------- Reports over time (columns) ----------
 
+  // Days up to ~3 months, weeks up to 2 years, months beyond that.
   function buckets(rows, lo, hi) {
-    const daily = hi - lo + 1 <= 92;
+    const days = hi - lo + 1;
+    if (days > 731) return monthBuckets(rows, lo, hi);
+    const daily = days <= 92;
     const start = daily ? lo : lo - dowOf(lo);
     const size = daily ? 1 : 7;
     const out = [];
@@ -263,7 +268,26 @@
       const i = Math.floor((r.rday - start) / size);
       if (out[i]) out[i].n++;
     }
-    return { list: out, daily: daily };
+    return { list: out, unit: daily ? "day" : "week" };
+  }
+
+  function monthBuckets(rows, lo, hi) {
+    const out = [], index = new Map();
+    const first = dayDate(lo), last = dayDate(hi);
+    for (let y = first.getUTCFullYear(), m = first.getUTCMonth();
+      y < last.getUTCFullYear() || (y === last.getUTCFullYear() && m <= last.getUTCMonth());
+      m === 11 ? (m = 0, y++) : m++) {
+      const start = Math.round(Date.UTC(y, m, 1) / 864e5);
+      const end = Math.round(Date.UTC(y, m + 1, 1) / 864e5) - 1;
+      index.set(y * 12 + m, out.length);
+      out.push({ a: Math.max(start, lo), b: Math.min(end, hi), n: 0, partial: start < lo || end > hi });
+    }
+    for (const r of rows) {
+      const d = dayDate(r.rday);
+      const i = index.get(d.getUTCFullYear() * 12 + d.getUTCMonth());
+      if (i !== undefined) out[i].n++;
+    }
+    return { list: out, unit: "month" };
   }
 
   function niceStep(max, ticks) {
@@ -282,8 +306,13 @@
       "H" + (x + w - r) + "A" + r + "," + r + " 0 0 1 " + (x + w) + "," + (t + r) + "V" + base + "Z";
   }
 
-  function bucketLabel(b, daily) {
-    if (daily) return DOW_LONG[dowOf(b.a)].slice(0, -1) + ", " + apDate(b.a);
+  function bucketLabel(b, unit) {
+    if (unit === "day") return DOW_LONG[dowOf(b.a)].slice(0, -1) + ", " + apDate(b.a);
+    if (unit === "month") {
+      const d = dayDate(b.a);
+      const name = FULL_MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear();
+      return b.partial ? name + " (" + apDate(b.a, false) + " to " + apDate(b.b, false) + " only)" : name;
+    }
     if (b.partial) return apDate(b.a, false) + " to " + apDate(b.b) + " (partial week)";
     return "Week of " + apDate(b.a);
   }
@@ -291,10 +320,12 @@
   function renderTime(rows, lo, hi) {
     const box = $("time-chart");
     const bk = buckets(rows, lo, hi);
-    const list = bk.list, daily = bk.daily;
-    $("time-note").textContent = daily
-      ? "Reports per day, by date reported"
-      : "Reports per week, by date reported. Weeks start Monday; lighter bars are partial weeks.";
+    const list = bk.list, unit = bk.unit, daily = unit === "day";
+    $("time-note").textContent = {
+      day: "Reports per day, by date reported",
+      week: "Reports per week, by date reported. Weeks start Monday; lighter bars are partial weeks.",
+      month: "Reports per month, by date reported. Lighter bars are partial months.",
+    }[unit];
 
     const W = Math.max(280, box.clientWidth || 600);
     const H = W < 520 ? 200 : 240;
@@ -310,7 +341,7 @@
 
     const svg = svgEl("svg", {
       viewBox: "0 0 " + W + " " + H, width: W, height: H, role: "img", tabindex: "0",
-      "aria-label": "Column chart of reports per " + (daily ? "day" : "week") +
+      "aria-label": "Column chart of reports per " + unit +
         ". Use the left and right arrow keys to read each value, or open the table.",
     });
     const axis = svgEl("g", { class: "axis" }, svg);
@@ -320,19 +351,26 @@
       svgEl("text", { x: m.l - 6, y: yy + 4, "text-anchor": "end" }, axis).textContent = compact(v);
     }
 
-    // X labels: Mondays for short ranges, month starts otherwise; skip any that would collide.
+    // X labels: Mondays for short ranges, month starts for longer ones, Januaries (as years)
+    // for monthly bars; skip any that would collide.
     let lastX = -Infinity;
     list.forEach((b, i) => {
       const d = dayDate(b.a);
-      const short = daily && hi - lo < 36;
-      const isFirstOfMonth = daily ? d.getUTCDate() === 1 : d.getUTCDate() <= 7 && (i > 0 || d.getUTCDate() === 1);
-      if (!(short ? dowOf(b.a) === 0 : isFirstOfMonth)) return;
+      let text;
+      if (unit === "month") {
+        if (d.getUTCMonth() !== 0) return;
+        text = String(d.getUTCFullYear());
+      } else {
+        const short = daily && hi - lo < 36;
+        const isFirstOfMonth = daily ? d.getUTCDate() === 1 : d.getUTCDate() <= 7 && (i > 0 || d.getUTCDate() === 1);
+        if (!(short ? dowOf(b.a) === 0 : isFirstOfMonth)) return;
+        const mon = SHORT_MONTHS[d.getUTCMonth()];
+        text = daily ? mon + " " + d.getUTCDate() : mon;
+        if (d.getUTCMonth() === 0) text += " " + d.getUTCFullYear();
+      }
       const x = m.l + i * band + band / 2;
       if (x - lastX < 44) return;
       lastX = x;
-      const mon = SHORT_MONTHS[d.getUTCMonth()];
-      let text = daily ? mon + " " + d.getUTCDate() : mon;
-      if (!daily && d.getUTCMonth() === 0) text += " " + d.getUTCFullYear();
       svgEl("text", { x: x, y: H - 8, "text-anchor": "middle" }, axis).textContent = text;
     });
 
@@ -367,7 +405,7 @@
         px = r.left + r.width / 2;
         py = svg.getBoundingClientRect().top + (y(b.n) / H) * svg.getBoundingClientRect().height;
       }
-      showTip(fmt(b.n) + (b.n === 1 ? " report" : " reports"), bucketLabel(b, daily), px, py);
+      showTip(fmt(b.n) + (b.n === 1 ? " report" : " reports"), bucketLabel(b, unit), px, py);
     }
     svg.addEventListener("keydown", (ev) => {
       if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
@@ -379,8 +417,8 @@
 
     box.replaceChildren(svg);
     $("time-table").replaceChildren(simpleTable(
-      [daily ? "Day" : "Week", "Reports"],
-      list.slice().reverse().map((b) => [bucketLabel(b, daily), b.n])
+      [unit.charAt(0).toUpperCase() + unit.slice(1), "Reports"],
+      list.slice().reverse().map((b) => [bucketLabel(b, unit), b.n])
     ));
   }
 
@@ -587,7 +625,7 @@
         (v) => { state.loc = v; syncControls(); update(); });
       const unchecked = locRows.filter((r) => r.loc === NOT_CHECKED).length;
       $("loc-note").textContent = unchecked
-        ? fmt(unchecked) + " of these reports have not had their case page checked yet; they fill in over the next few daily runs."
+        ? fmt(unchecked) + " of these reports have not had their case page checked yet. The daily update checks 500 a day, newest first."
         : "";
     }
     renderHeat(base);
@@ -676,6 +714,7 @@
       fillSelect($("f-loc"), countBy(ROWS, "loc").map((c) => c[0]), "All locations");
       $("loc-field").hidden = !hasLocations;
       $("loc-block").hidden = !hasLocations;
+      $("f-range").querySelector('option[value="all"]').textContent = "All data (since " + apDate(FIRST) + ")";
       $("f-from").min = $("f-to").min = isoDay(FIRST);
       $("f-from").max = $("f-to").max = isoDay(TODAY);
 

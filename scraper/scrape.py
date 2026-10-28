@@ -10,6 +10,7 @@ then merges what it found into the CSV by case number. Rows that changed
 Usage:
   python scraper/scrape.py --since-days 120            # daily run
   python scraper/scrape.py --since-days 400 --backfill # first run, ~12 months
+  python scraper/scrape.py --since 2018-01-01 --backfill # back to a set date
   python scraper/scrape.py --all --backfill            # whole archive (~1 hr)
 
 Standard library only, so the GitHub Action needs no pip install.
@@ -270,10 +271,17 @@ def write_outputs(rows, changes, meta):
     META_PATH.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
 
 
+def iso_date(value):
+    datetime.strptime(value, "%Y-%m-%d")
+    return value
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--since-days", type=int, default=120,
                     help="re-read pages until offense dates are this many days old (default 120)")
+    ap.add_argument("--since", type=iso_date, metavar="YYYY-MM-DD",
+                    help="re-read pages back to this offense date (overrides --since-days)")
     ap.add_argument("--all", action="store_true", help="read every page of the log")
     ap.add_argument("--max-pages", type=int, default=5000)
     ap.add_argument("--backfill", action="store_true",
@@ -282,12 +290,14 @@ def main():
                     help="max case pages to fetch this run for location/date cleared (0 to skip)")
     ap.add_argument("--details-since-days", type=int, default=400,
                     help="only fetch case pages for offenses within this many days")
+    ap.add_argument("--details-since", type=iso_date, metavar="YYYY-MM-DD",
+                    help="only fetch case pages for offenses on or after this date (overrides --details-since-days)")
     ap.add_argument("--delay", type=float, default=1.0, help="seconds between requests")
     args = ap.parse_args()
 
     now = datetime.now(AZ)
     today = now.strftime("%Y-%m-%d")
-    cutoff = (now - timedelta(days=args.since_days)).strftime("%Y-%m-%d")
+    cutoff = args.since or (now - timedelta(days=args.since_days)).strftime("%Y-%m-%d")
     print(f"Reading log back to offense date {cutoff}" if not args.all else "Reading the whole log")
 
     rows = load_csv(CSV_PATH)
@@ -296,7 +306,7 @@ def main():
     new_count, changes = merge(rows, scraped, today, args.backfill)
     print(f"{new_count} new rows, {len(changes)} field changes")
 
-    details_since = (now - timedelta(days=args.details_since_days)).strftime("%Y-%m-%d")
+    details_since = args.details_since or (now - timedelta(days=args.details_since_days)).strftime("%Y-%m-%d")
     detail_count = fill_details(rows, args.details_limit, args.delay, today, details_since) \
         if args.details_limit else 0
     derive_groups(rows)

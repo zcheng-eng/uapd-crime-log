@@ -60,14 +60,16 @@ The log is sorted by **offense** date, not report date. A report filed today abo
 incident from last month shows up several pages deep, not on page 1. So each run:
 
 - **Daily:** re-reads the log back to offenses 120 days old (about 40–60 pages, 1 second
-  apart), adds new entries and updates changed ones, then opens up to 300 individual case pages
-  to collect *General Location* and *Date Cleared*, which only appear there.
+  apart), adds new entries and updates changed ones, then opens up to 500 individual case pages
+  (newest first, back to 2018) to collect *General Location* and *Date Cleared*, which only
+  appear there.
 - **Monthly (the 1st):** re-reads about 13 months to catch very late entries.
 - **On demand:** Actions → Update UAPD log data → Run workflow, with custom arguments.
 
-To add the whole archive back to 2015 (about 40,000 entries and an hour of scraping), run the
-workflow with the arguments `--all --backfill --details-limit 0`. The dashboard's "All data"
-option will then cover everything.
+The data currently starts on Jan. 1, 2018, loaded with `--since 2018-01-01 --backfill --details-limit 0`.
+To go further back, run the workflow with an earlier `--since` date, or `--all --backfill --details-limit 0`
+for the whole archive back to 2015 (about 40,000 entries and an hour of scraping). The dashboard's
+"All data" option follows whatever the data covers.
 
 ## Running it on your computer
 
