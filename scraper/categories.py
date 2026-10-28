@@ -11,27 +11,30 @@ several offenses ("Drugs and Warrants") lands in the first group it matches.
 import re
 
 CATEGORY_RULES = [
-    ("Unfounded / error", r"unfounded|no bona ?fide|pulled in error|no case"),
+    # Placeholders and stray case numbers in the label field
+    ("Not listed", r"^(not provided|not documented|n/p|unknown|pending)(\W|$)|^\d{10}$|^r\d{5}-\d{4}$"),
+    ("Unfounded / error", r"unfounded|no bona ?fide|pulled (in )?error|no case"),
+    ("Homicide", r"homicide|murder|manslaughter"),
     ("Sex offenses", r"sex|rape|fondl|indecent|incest|statutory|voyeur"),
-    ("Dating/domestic violence & stalking", r"domestic|dating violence|stalk|\(dv\)"),
+    ("Dating/domestic violence & stalking", r"domestic|dating violence|stalk|\bdv\b"),
     ("Robbery", r"robbery"),
     ("DUI", r"\bdui\b|dwi|under the influence|extreme dui"),
-    ("Assault", r"assault|aggravated|fight|endanger"),
+    ("Assault", r"assault|assualt|aggravated|fight|endanger"),
     ("Burglary", r"burglar"),
     ("Motor vehicle theft", r"motor vehicle theft|vehicle theft|stolen vehicle|auto theft|\bgta\b"),
     ("Fraud", r"fraud|forg|identity theft|counterfeit|embezzl|scam"),
-    ("Theft", r"larceny|theft|shoplift|stolen|steal"),
+    ("Theft", r"larceny|laraceny|laceny|theft|shoplift|stolen|steal"),
     ("Weapons", r"weapon|firearm|gun|knife"),
-    ("Liquor", r"liquor|alcohol|minor in possession|\bmip\b|intox"),
+    ("Liquor", r"liquor|alcohol|minors? in poss?ess?ion|\bmip\b|intox"),
     ("Drugs", r"drug|\bdug law|narcotic|marijuana|cannabis|paraphernalia|dangerous drug|controlled substance"),
     ("Criminal damage", r"criminal damage|vandal|graffiti|malicious mischief|arson"),
     ("Trespassing", r"trespass"),
-    ("Disorderly conduct, threats & harassment", r"threat|harr?ass|intimidat|disorderly|hate"),
-    ("Traffic & collisions", r"traffic|collision|accident|hit and run|hit & run|moving viol|parking"),
+    ("Disorderly conduct, threats & harassment", r"threat|harr?ass|intimidat|disorde?r?ly|hate|red tag"),
+    ("Traffic & collisions", r"traffic|collisi?on|accident|hit and run|hit & run|moving viol|parking|motor vehicle laws"),
     ("Warrants", r"warr[ae]nt"),
     ("Lost & found property", r"found|lost"),
-    ("Suspicious activity & disturbances", r"suspicious|disturbance|noise|loiter|prowl"),
-    ("Welfare checks & assists", r"assis|welfare|medical|mental|sick|death|missing|information|"
+    ("Suspicious activity & disturbances", r"suspicious|disturbance|noise|loiter|prowl|vagrancy"),
+    ("Welfare checks & assists", r"assis|welfare|medical|mental|sick|runaway|hazard|death|missing|information|"
                                  r"courtesy|escort|civil|animal|alarm|fire"),
 ]
 _COMPILED = [(name, re.compile(pattern, re.I)) for name, pattern in CATEGORY_RULES]
@@ -45,8 +48,10 @@ def categorize(nature):
 
 
 DISPOSITION_RULES = [
-    ("Unfounded", r"unfounded"),
-    ("Arrest or citation", r"arrest|cite|citation|booked|charges? filed"),
+    # Placeholders, and dates typed into the disposition field
+    ("Not listed", r"^(not provided|not documented|n/p|unknown)(\W|$)|^\d{1,2}/\d{1,2}/\d{2,4}$"),
+    ("Unfounded", r"unfounded|pulled in error"),
+    ("Arrest or citation", r"arrest|aresst|cite|citation|civil traffic|summons|booked|charges? filed"),
     ("Referral or diversion", r"referr|diversion|refer"),
     ("Open / pending", r"pending|investigation|further|open|active|suspend|inactive"),
     ("Closed", r"closed|cleared|exceptional|complete"),
