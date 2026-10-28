@@ -30,10 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.x" # the scraper uses only the standard library
       - name: Run scraper
         env:
           EVENT: ${{ github.event_name }}
@@ -48,7 +48,7 @@ jobs:
             ARGS="--since-days 120 --details-limit 300"
           fi
           echo "python scraper/scrape.py $ARGS"
-          python scraper/scrape.py $ARGS
+          python -u scraper/scrape.py $ARGS
       - name: Commit data
         run: |
           git config user.name "github-actions[bot]"
@@ -58,6 +58,8 @@ jobs:
             echo "No changes"
           else
             git commit -m "Update UAPD log data $(date -u +%Y-%m-%d)"
+            # pick up any commit pushed while the scrape was running
+            git pull --rebase origin "$GITHUB_REF_NAME"
             git push
           fi
 
@@ -70,12 +72,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }} # the branch tip, including the data commit above
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
