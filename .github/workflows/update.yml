@@ -11,9 +11,11 @@ on:
       args:
         description: "Scraper arguments (e.g. --all --backfill for the whole archive)"
         default: "--since-days 120"
+  # Redeploy when the dashboard or data is changed by hand. (The scrape job's own
+  # data commits use GITHUB_TOKEN, which doesn't trigger workflows, so no loop.)
   push:
     branches: [main]
-    paths: ["docs/**", "!docs/data/**"]
+    paths: ["docs/**"]
 
 permissions:
   contents: write
