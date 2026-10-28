@@ -107,14 +107,10 @@
     return s.split(" ").map((w) => (KEEP_UPPER.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase())).join(" ");
   }
 
-  // UAPD spells some location types several ways ("Non-Campus", "Non Campus", "Exclude").
+  // location_group is the scraper's grouping of UAPD's many spellings (see categories.py).
   function locationType(r) {
     if (!r.details_fetched) return NOT_CHECKED;
-    const s = r.general_location.toLowerCase();
-    if (!s || s === "unknown") return "Not listed";
-    if (/^non[- ]?campus/.test(s)) return "Non-Campus";
-    if (/^exclude/.test(s)) return "Excluded";
-    return r.general_location;
+    return r.location_group || "Not listed";
   }
 
   function prep(r) {

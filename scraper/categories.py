@@ -59,3 +59,25 @@ def disposition_group(disposition):
         if pattern.search(disposition or ""):
             return name
     return "Other" if disposition else "Not listed"
+
+
+# "General Location" on each case page uses the Clery Act's geography terms but
+# spells them many ways ("ON CAMPUS PROPERTY", "Clery Excluded", "Residence Hall-Cochise").
+LOCATION_RULES = [
+    ("On-campus student housing", r"student housing|residence hall"),
+    ("On campus", r"^on campus"),
+    ("Non-campus", r"non[- ]?campus"),
+    ("Public property", r"public prop"),
+    ("Clery excluded", r"exclude"),
+]
+_LOCATION = [(name, re.compile(pattern, re.I)) for name, pattern in LOCATION_RULES]
+
+
+def location_group(general_location):
+    value = (general_location or "").strip()
+    if not value or value.lower() == "unknown":
+        return "Not listed"
+    for name, pattern in _LOCATION:
+        if pattern.search(value):
+            return name
+    return "Other"

@@ -96,6 +96,7 @@ load the data.)
 | `disposition_group` | Grouping: Closed, Arrest or citation, Referral or diversion, Open / pending, Unfounded |
 | `general_location` | From the case page: On Campus, Public Property, etc. Blank until fetched |
 | `date_cleared` | From the case page |
+| `location_group` | Grouping of `general_location`: On campus, On-campus student housing, Non-campus, Public property, Clery excluded |
 | `first_seen` | The day this project first saw the entry. Blank for entries loaded in the initial backfill |
 | `last_changed` | The day any listed field last changed |
 | `details_fetched` | The day the case page was last read |

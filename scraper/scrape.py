@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from categories import categorize, disposition_group  # noqa: E402
+from categories import categorize, disposition_group, location_group  # noqa: E402
 
 BASE = "https://uapd.arizona.edu"
 LIST_URL = BASE + "/public-information/uapd-daily-activity-log"
@@ -45,7 +45,7 @@ LIST_FIELDS = ["case_number", "report_datetime", "offense_datetime", "nature", "
 # Columns only on each case's own page.
 DETAIL_FIELDS = ["general_location", "date_cleared"]
 FIELDS = (LIST_FIELDS[:3] + ["nature", "category", "address", "disposition", "disposition_group"]
-          + DETAIL_FIELDS + ["url", "first_seen", "last_changed", "details_fetched"])
+          + DETAIL_FIELDS + ["location_group", "url", "first_seen", "last_changed", "details_fetched"])
 
 TABLE_COLUMNS = {
     "title": "case_number",
@@ -220,11 +220,15 @@ def merge(existing, scraped, today, backfill):
             old["last_changed"] = today
             old["details_fetched"] = ""  # date cleared may have changed too
         old["url"] = row.get("url") or old.get("url", "")
-    # Re-derive the groups for every row, so edits to categories.py apply to old rows too.
-    for row in existing.values():
+    return new_count, changes
+
+
+def derive_groups(rows):
+    # Re-derived for every row on every run, so edits to categories.py apply to old rows too.
+    for row in rows.values():
         row["category"] = categorize(row.get("nature", ""))
         row["disposition_group"] = disposition_group(row.get("disposition", ""))
-    return new_count, changes
+        row["location_group"] = location_group(row.get("general_location", "")) if row.get("details_fetched") else ""
 
 
 def fill_details(rows, limit, delay, today, since=""):
@@ -295,6 +299,7 @@ def main():
     details_since = (now - timedelta(days=args.details_since_days)).strftime("%Y-%m-%d")
     detail_count = fill_details(rows, args.details_limit, args.delay, today, details_since) \
         if args.details_limit else 0
+    derive_groups(rows)
 
     # The earliest date the CSV fully covers: every run reads back to its cutoff,
     # so coverage starts at the oldest cutoff any run has used.
