@@ -1,0 +1,81 @@
+name: Update UAPD log data
+
+on:
+  schedule:
+    # 14:15 UTC = 7:15 a.m. Arizona time, every day.
+    - cron: "15 14 * * *"
+    # First of each month: re-read ~13 months to catch very late entries.
+    - cron: "45 14 1 * *"
+  workflow_dispatch:
+    inputs:
+      args:
+        description: "Scraper arguments (e.g. --all --backfill for the whole archive)"
+        default: "--since-days 120"
+  push:
+    branches: [main]
+    paths: ["docs/**", "!docs/data/**"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: uapd-update
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run scraper
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          MANUAL_ARGS: ${{ inputs.args }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            ARGS="$MANUAL_ARGS"
+          elif [ "$SCHEDULE" = "45 14 1 * *" ]; then
+            ARGS="--since-days 400 --details-limit 400"
+          else
+            ARGS="--since-days 120 --details-limit 300"
+          fi
+          echo "python scraper/scrape.py $ARGS"
+          python scraper/scrape.py $ARGS
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Update UAPD log data $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+  deploy:
+    needs: scrape
+    # Runs after a scrape, and on its own when the dashboard code changes.
+    if: always() && (needs.scrape.result == 'success' || needs.scrape.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }} # the branch tip, including the data commit above
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UAPD Crime Log Tracker</title>
+<meta name="description" content="An interactive look at the University of Arizona Police Department's Daily Crime and Safety Log, refreshed every morning.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Independent public-records project</p>
+      <h1>UAPD Crime Log Tracker</h1>
+      <p class="lede">Reports from the University of Arizona Police Department's
+        <a href="https://uapd.arizona.edu/public-information/uapd-daily-activity-log">Daily Crime and Safety Log</a>,
+        the record of crimes and incidents campus police must publish under the federal Clery Act.
+        The data refreshes every morning.</p>
+    </div>
+    <p class="updated">
+      <span>Data checked <strong id="updated">…</strong></span>
+      <a href="data/incidents.csv" download>Download the data (CSV)</a>
+    </p>
+  </header>
+
+  <form class="filters" id="filters" role="search" aria-label="Filter reports" onsubmit="return false">
+    <label class="field">
+      <span>Date reported</span>
+      <select id="f-range">
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="182">Last 6 months</option>
+        <option value="365" selected>Last 12 months</option>
+        <option value="all">All data</option>
+        <option value="custom">Custom range…</option>
+      </select>
+    </label>
+    <span class="field custom" id="custom-range" hidden>
+      <label><span>From</span><input type="date" id="f-from"></label>
+      <label><span>To</span><input type="date" id="f-to"></label>
+    </span>
+    <label class="field">
+      <span>Category</span>
+      <select id="f-cat"><option value="">All categories</option></select>
+    </label>
+    <label class="field">
+      <span>Outcome</span>
+      <select id="f-disp"><option value="">All outcomes</option></select>
+    </label>
+    <label class="field" id="loc-field">
+      <span>Location type</span>
+      <select id="f-loc"><option value="">All locations</option></select>
+    </label>
+    <label class="field grow">
+      <span>Search</span>
+      <input type="search" id="f-q" placeholder="Address, offense or case number" autocomplete="off">
+    </label>
+    <button type="button" class="ghost" id="reset">Reset</button>
+  </form>
+
+  <p class="status" id="status" role="status">Loading the log…</p>
+
+  <main id="main" hidden>
+    <section class="stats" aria-label="Summary">
+      <div class="tile hero">
+        <div class="label">Reports</div>
+        <div class="value" id="s-total">–</div>
+        <div class="sub" id="s-delta"></div>
+      </div>
+      <div class="tile">
+        <div class="label">Average per day</div>
+        <div class="value" id="s-avg">–</div>
+        <div class="sub" id="s-avg-sub"></div>
+      </div>
+      <div class="tile">
+        <div class="label">Ended in arrest or citation</div>
+        <div class="value" id="s-arrest">–</div>
+        <div class="sub" id="s-arrest-sub"></div>
+      </div>
+      <div class="tile">
+        <div class="label">Most common category</div>
+        <div class="value small" id="s-top">–</div>
+        <div class="sub" id="s-top-sub"></div>
+      </div>
+    </section>
+
+    <section class="card wide" aria-labelledby="t-time">
+      <div class="card-head">
+        <div>
+          <h2 id="t-time">Reports over time</h2>
+          <p class="note" id="time-note">Reports per week, by date reported</p>
+        </div>
+        <button type="button" class="ghost small" data-toggle="time">Show table</button>
+      </div>
+      <div class="chart" id="time-chart"></div>
+      <div class="table-view" id="time-table" hidden></div>
+      <p class="foot">The log is updated within two business days of a report, so the most recent days are usually incomplete.</p>
+    </section>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="t-cat">
+        <div class="card-head">
+          <div>
+            <h2 id="t-cat">What was reported</h2>
+            <p class="note">Click a category to filter everything else</p>
+          </div>
+        </div>
+        <div class="bars" id="cat-bars"></div>
+      </section>
+
+      <div class="stack">
+      <section class="card" aria-labelledby="t-disp">
+        <div class="card-head">
+          <div>
+            <h2 id="t-disp">How cases ended</h2>
+            <p class="note">Disposition as listed in the log; it can change later</p>
+          </div>
+        </div>
+        <div class="bars" id="disp-bars"></div>
+        <div id="loc-block">
+          <h3>Where, by location type</h3>
+          <div class="bars" id="loc-bars"></div>
+          <p class="foot" id="loc-note"></p>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="t-addr">
+        <div class="card-head">
+          <div>
+            <h2 id="t-addr">Most frequent addresses</h2>
+            <p class="note">Click an address to search for it</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data" id="addr-table">
+            <thead><tr><th scope="col">Address</th><th scope="col" class="num">Reports</th><th scope="col">Most common</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+    </div>
+
+    <section class="card wide" aria-labelledby="t-heat">
+      <div class="card-head">
+        <div>
+          <h2 id="t-heat">When incidents happen</h2>
+          <p class="note">By day and hour of the offense, Arizona time</p>
+        </div>
+        <button type="button" class="ghost small" data-toggle="heat">Show table</button>
+      </div>
+      <div id="heatmap"></div>
+      <div class="table-view" id="heat-table" hidden></div>
+      <p class="foot" id="heat-note"></p>
+    </section>
+
+
+    <section class="card wide" aria-labelledby="t-list">
+      <div class="card-head">
+        <div>
+          <h2 id="t-list">All matching reports</h2>
+          <p class="note" id="list-note"></p>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data" id="list-table">
+          <thead>
+            <tr>
+              <th scope="col"><button type="button" data-sort="report_datetime">Reported</button></th>
+              <th scope="col"><button type="button" data-sort="case_number">Case</button></th>
+              <th scope="col"><button type="button" data-sort="nature">Nature of crime (as listed)</button></th>
+              <th scope="col"><button type="button" data-sort="category">Category</button></th>
+              <th scope="col"><button type="button" data-sort="address">Address</button></th>
+              <th scope="col"><button type="button" data-sort="disposition">Disposition</button></th>
+              <th scope="col"><button type="button" data-sort="general_location">Location type</button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button type="button" class="ghost more" id="more" hidden>Show more</button>
+    </section>
+
+    <section class="card wide about" aria-labelledby="t-about">
+      <h2 id="t-about">About this data</h2>
+      <ul>
+        <li><strong>These are reports, not proven crimes.</strong> The log lists what was reported to UAPD and other
+          campus security authorities. It also includes non-criminal entries such as found property, collisions and
+          assists to other agencies. A change in the number of reports can reflect reporting or policing, not only
+          how much crime happened.</li>
+        <li><strong>Counts use the date reported.</strong> The time-of-day chart uses the offense date and time.
+          Offenses logged at exactly midnight are left out of that chart, because the log often uses midnight when
+          the real time is unknown.</li>
+        <li><strong>Categories are this project's grouping.</strong> UAPD's own labels are shown in the table.
+          UAPD changed its labeling format around July and August 2026 (for example, "LARCENY/ALL OTHERS" became
+          "Larceny"), so labels are grouped into broad categories to keep trends comparable. An entry that lists
+          several offenses is counted once, under the first category it matches.</li>
+        <li><strong>Recent days are incomplete.</strong> UAPD updates the log within two business days of a report,
+          and may hold back an entry while it could jeopardize an investigation.</li>
+        <li><strong>Entries change.</strong> Dispositions are updated as cases close. Each day's changes are kept in
+          <a href="data/changes.csv">changes.csv</a>. Location type and date cleared come from each case's own page
+          and are filled in gradually.</li>
+        <li>This site is not affiliated with UAPD or the University of Arizona. Check important details against the
+          <a href="https://uapd.arizona.edu/public-information/uapd-daily-activity-log">original log</a>.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
