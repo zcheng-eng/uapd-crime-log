@@ -5,3 +5,7 @@ date,case_number,field,old,new
 2026-11-02,2609160008,nature,Clery Crime: Sexual Assault,Clery Crime: Sexual Assault - Statutory Rape
 2026-11-02,2609160008,disposition,Closed,Pending Investigation
 2026-11-03,R00111-2026,address,1101 E Mabel St,1011 E Mabel St
+2026-11-05,2611020011,report_datetime,,2026-11-02 16:20
+2026-11-05,2611020011,offense_datetime,,2026-11-02 16:20
+2026-11-05,2611020002,report_datetime,,2026-11-02 09:30
+2026-11-05,2611020002,offense_datetime,,2026-11-02 09:00
