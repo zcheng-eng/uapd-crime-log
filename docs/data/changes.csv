@@ -12,3 +12,8 @@ date,case_number,field,old,new
 2026-11-07,2610290005,disposition,Further investigation,Closed w/ Referral
 2026-11-07,2610280001,disposition,Further Investigation,Closed w/ Referral
 2026-11-07,2610110003,disposition,Closed,Closed w/ Arrest
+2026-11-11,2611020011,report_datetime,2026-11-02 16:20,
+2026-11-11,2611020011,offense_datetime,2026-11-02 16:20,
+2026-11-11,2611020011,disposition,Further Investigation,Closed w/ Arrest
+2026-11-11,2610300010,disposition,Further Investigation,Closed w/ Referral
+2026-11-11,2610160011,disposition,Further Investigation,Closed
