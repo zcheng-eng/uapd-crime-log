@@ -17,3 +17,13 @@ date,case_number,field,old,new
 2026-11-11,2611020011,disposition,Further Investigation,Closed w/ Arrest
 2026-11-11,2610300010,disposition,Further Investigation,Closed w/ Referral
 2026-11-11,2610160011,disposition,Further Investigation,Closed
+2026-11-14,2611110001,nature,Liquor Law/Minor in Possession,Liquor Law Violation
+2026-11-14,2611110001,address,865 E University,865 E University Blvd
+2026-11-14,2611110001,disposition,Further Investigation,Closed w/ Referral
+2026-11-14,2611090003,report_datetime,,2026-11-09 15:20
+2026-11-14,2611080003,report_datetime,,2026-11-08 22:28
+2026-11-14,2611080003,offense_datetime,,2026-11-08 22:28
+2026-11-14,2611108018,address,Unknown Dorm,575 N Highland
+2026-11-14,2611080002,report_datetime,,2026-11-08 22:13
+2026-11-14,2611020011,report_datetime,,2026-11-02 16:20
+2026-11-14,2611020011,offense_datetime,,2026-11-02 16:20
