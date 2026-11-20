@@ -28,3 +28,5 @@ date,case_number,field,old,new
 2026-11-14,2611020011,report_datetime,,2026-11-02 16:20
 2026-11-14,2611020011,offense_datetime,,2026-11-02 16:20
 2026-11-18,2609270007,disposition,Further Investigation,Closed
+2026-11-20,2611120002,disposition,Further Investigation,Closed
+2026-11-20,2610010012,disposition,Pending,Closed
