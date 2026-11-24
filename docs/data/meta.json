@@ -1,12 +1,12 @@
 {
   "source": "https://uapd.arizona.edu/public-information/uapd-daily-activity-log",
-  "last_run": "2026-11-23 08:10",
+  "last_run": "2026-11-24 08:07",
   "coverage_start": "2018-01-01",
   "timezone": "America/Phoenix",
-  "rows": 28840,
+  "rows": 28851,
   "pages_scanned": 40,
-  "new_rows": 0,
+  "new_rows": 11,
   "changed_fields": 0,
   "case_pages_fetched": 500,
-  "details_missing": 13658
+  "details_missing": 13169
 }
