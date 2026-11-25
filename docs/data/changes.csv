@@ -30,3 +30,7 @@ date,case_number,field,old,new
 2026-11-18,2609270007,disposition,Further Investigation,Closed
 2026-11-20,2611120002,disposition,Further Investigation,Closed
 2026-11-20,2610010012,disposition,Pending,Closed
+2026-11-25,2610180002,offense_datetime,2026-10-18 02:21,2026-10-16 12:00
+2026-11-25,2610180002,nature,Clery Crime: Sexual Assault/Forcible Rape,Clery Crime: Sexual Assault
+2026-11-25,2610180002,address,515 N Tyndall Ave,515 N Tyndall ave
+2026-11-25,2610180002,disposition,Further Investigation,Closed w/ Arrest
